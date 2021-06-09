@@ -1,0 +1,16 @@
+# Generated with {{ name }}
+# {{ description }}
+from enum import Enum
+from enum import auto
+
+class {{ type }}(Enum):
+    """{{description}}"""
+    {%- for enum in values %}
+    {{ enum.value }} = auto() 
+    {%- endfor %}
+
+    def label(self):
+        {%- for enum in values %}
+        if self == {{type}}.{{ enum.value}}:
+            return "{{ enum.label}}"
+        {%- endfor %}

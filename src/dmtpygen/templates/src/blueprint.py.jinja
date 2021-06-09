@@ -1,0 +1,35 @@
+# {{ description }}
+# Generated with {{ type }}
+from dmt.blueprint import Blueprint
+from dmt.dimension import Dimension
+from dmt.attribute import Attribute
+from dmt.enum_attribute import EnumAttribute
+from dmt.blueprint_attribute import BlueprintAttribute
+{%- for imp in imports %}
+{{imp}}
+{%- endfor %}
+
+class {{ type }}({{super_classes}}):
+    """{{description}}"""
+
+    def __init__(self, name="{{name}}", package_path="{{package_path}}", description="{{description | escape_string}}"):
+        super().__init__(name,package_path,description)
+        {%- for dim in dimensions %}        
+        {{dim.name}}=Dimension("{{dim.name}}","{{dim.description}}")
+        self.dimensions.append({{dim.name}})
+        {%- endfor %}
+        {%- for p in attributes %}
+        {%- if p.is_primitive %}
+            {%- if "named_args" in p %}
+        self.attributes.append({{p.constructor}}("{{p.name}}","{{p.attributeType}}","{{p.description | escape_string}}",{{p.named_args}}))
+            {%- else %}
+        self.attributes.append({{p.constructor}}("{{p.name}}","{{p.attributeType}}","{{p.description | escape_string}}"))
+            {%- endif %}
+        {%- else %}
+            {%- if "named_args" in p %}
+        self.attributes.append({{p.constructor}}("{{p.name}}","{{p.attributeType}}","{{p.description | escape_string}}",{{p.contained}},{{p.named_args}}))
+            {%- else %}
+        self.attributes.append({{p.constructor}}("{{p.name}}","{{p.attributeType}}","{{p.description | escape_string}}",{{p.contained}}))
+            {%- endif %}
+        {%- endif %}
+        {%- endfor %}
