@@ -17,7 +17,6 @@ def create_model(blueprint: Blueprint, package_name: str, package_path: str):
     name = blueprint.name
     imports = OrderedDict()
     cross_references = OrderedDict()
-
     model["name"] = name
     model["package"] = package_name
     model["root_package"] = package_name
@@ -26,6 +25,7 @@ def create_model(blueprint: Blueprint, package_name: str, package_path: str):
     model["filename"] = name.lower()
     model["version"] = 1
     model["description"] = blueprint.description
+    model["argument_description"] = __create_argument_description(blueprint)
     type_name = __first_to_upper(name)
     model["type"] = type_name
     model["blueprint_var_name"] = name.lower()
@@ -53,17 +53,16 @@ def create_model(blueprint: Blueprint, package_name: str, package_path: str):
     model["cross_references"] = __to__import_infos(cross_references.values())
     model["has_array"] = has_array
     model["fields"] = fields
-
-    # dimensions=blueprint.get("dimensions",[])
-    dimensions = []
-    model["dimensions"] = dimensions
-    # We also create fields to hold the dimensions
-    for dim in dimensions:
-        field = __create_dimension_field(dim)
-        if field:
-            fields.append(field)
-
+    model["arguments"]=__create_named_arguments(fields)
     return model
+
+def __create_argument_description(blueprint: Blueprint) -> Sequence[str]:
+    # imag -- the imaginary part (default 0.0)
+    kwargs = []
+    for attribute in blueprint.attributes:
+        kwargs.append(attribute.name + " -- " + attribute.description)
+
+    return kwargs
 
 def __first_to_upper(string):
     # Make sure the first letter is uppercase
@@ -87,8 +86,8 @@ def __create_field(attribute: BlueprintAttribute, package: Package,imports: Orde
         else:
             cross_references[a_type]=blueprint
             field["is_cross_reference"]=True
-
-        return __create_blueprint_field(field, blueprint, is_array)
+        optional = attribute.get("optional",True)
+        return __create_blueprint_field(field, blueprint, is_array, optional)
 
     enum_type = attribute.get("enumType",None)
     if enum_type:
@@ -104,7 +103,8 @@ def __create_field(attribute: BlueprintAttribute, package: Package,imports: Orde
         field["setter"] = "[]"
     else:
         field["setter"] = __map(ftype, setters)
-        field["init"] = __find_default_value(attribute, ftype)
+        field["default"] = __find_default_value(attribute, ftype)
+        field["init"] = field["default"]
 
 
     return field
@@ -116,7 +116,7 @@ def __rename_if_reserved(name):
 
 
 
-def __create_blueprint_field(field, blueprint: Blueprint, is_array) -> Dict:
+def __create_blueprint_field(field, blueprint: Blueprint, is_array, optional) -> Dict:
     field["is_entity"] = True
     import_package: Package = blueprint.get_parent()
     paths=import_package.get_paths()
@@ -130,7 +130,11 @@ def __create_blueprint_field(field, blueprint: Blueprint, is_array) -> Dict:
     else:
         field["type"] = blueprint.name
         field["setter"] = "value"
-        field["init"] = "None"
+        if optional:
+            field["init"] = "None"
+        else:
+            # Then we create an inital
+            field["init"] = blueprint.name + "()"
     return field
 
 def __create_enum_field(field, package: Package, enum_type: str, imports) -> Dict:
@@ -140,21 +144,6 @@ def __create_enum_field(field, package: Package, enum_type: str, imports) -> Dic
     field["setter"] = "value"
     field["init"] = enum.name + "." + enum.default
     return field
-
-
-def __create_dimension_field(dim):
-    field = {}
-    field["name"] = dim["name"]
-    field["is_array"] = False
-    etype = __map_type("integer")
-    field["type"] = etype
-    field["readonly"] = False
-    field["description"] = dim.get("description", "")
-    field["init"] = 1
-    field["setter"] = "int(value)"
-    field["random_value"] = 1
-    return field
-
 
 def __map(key, values):
     converted = values.get(key)
@@ -228,4 +217,18 @@ def __to__import_infos(blueprints: Set[Blueprint]) -> Sequence[Dict]:
 
 def __refers_to(blueprint: Blueprint, imports: Dict) -> bool:
     return blueprint in imports.values()
+
+def __create_named_arguments(fields: Sequence[Dict]) -> str:
+    args = []
+    for field in fields:
+        if not field["is_entity"] and not field["is_array"]:
+            default_value = field["init"]
+            name = field["name"]
+            args.append(name + ":" + field["type"] +"="+ str(default_value))
+            field["init"] = name
+
+    if len(args) == 0:
+        return ""
+
+    return ", " + ", ".join(args)
     

@@ -24,15 +24,21 @@ if TYPE_CHECKING:
 {%- endif %}
 
 class {{ type }}(Entity):
-    """{{description}}"""
+    """
+    {{description}}
+    
+    Keyword arguments
+    -----------------
+    {%- for field in fields %}
+    {{ field.name }} : {{ field.type }} 
+         {{ field.description | escape_string }} {%- if "default" in field %}(default {{ field["default"] }}){%- endif %}
+    {%- endfor %}
+    """
 
-    def __init__(self, **kwargs): 
+    def __init__(self {{ arguments }}): 
         {%- for field in fields %}
         self.__{{ field.name }} = {{ field.init }} 
         {%- endfor %}
-        for key, value in kwargs.items():
-            if not isinstance(value, Dict):
-                setattr(self, key, value)
 
     @property
     def blueprint(self) -> Blueprint:
