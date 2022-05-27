@@ -17,7 +17,7 @@ with open('requirements.txt',encoding='utf8') as f:
 
 setup(
     name='dmtpygen',
-    version='0.1.0',
+    version='0.2.0',
     author="SINTEF Ocean",
     description="Python generator for DMT based models",
     long_description=long_description,

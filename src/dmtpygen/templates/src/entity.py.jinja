@@ -8,7 +8,8 @@ from typing import Dict,Sequence,List
 from dmt.entity import Entity
 from dmt.blueprint import Blueprint
 from .blueprints.{{ filename }} import {{ blueprint_type }}
-{%- if has_array %}
+{%- if needs_numpy %}
+from numpy import ndarray,asarray
 {%- else %}
 from typing import Dict
 {%- endif %}
@@ -64,9 +65,13 @@ class {{ type }}({{super_classes}}):
     def {{ field.name }}(self, value: {{ field.type }}):
         """Set {{field.name}}"""
         {%- if field.is_array %}
+            {%- if field.is_entity %}
         if not isinstance(value, Sequence):
             raise Exception("Expected sequense, but was " , type(value))
         self.__{{ field.name }} = value
+            {%- else %}
+        self.__{{ field.name }} = asarray(value)
+            {%- endif %}
         {%- else %}
         self.__{{ field.name }} = {{ field.setter }}
         {%- endif %}

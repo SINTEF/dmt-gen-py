@@ -71,8 +71,10 @@ class BlueprintGenerator(TemplateBasedGenerator):
             named_args = []
 
             if attribute.is_many:
-                # TODO: dimensions is not named
-                named_args.append('Dimension("size","")')
+                sdims: str=a_dict["dimensions"]
+                dims=sdims.split(",")
+                for dim in dims:
+                    named_args.append(f'Dimension("{dim.strip()}")')
             if attribute.is_enum:
                 a_dict["constructor"]="EnumAttribute"
                 a_dict["attributeType"]=root_name+a_dict["enumType"]

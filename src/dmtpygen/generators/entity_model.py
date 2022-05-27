@@ -35,6 +35,7 @@ def create_model(blueprint: Blueprint, package_name: str, package_path: str):
 
     fields = []
     has_array = False
+    needs_numpy = False
 
 
     for attribute in blueprint.all_attributes.values():
@@ -43,6 +44,7 @@ def create_model(blueprint: Blueprint, package_name: str, package_path: str):
             fields.append(field)
             if field["is_array"]:
                 has_array = True
+                needs_numpy |= not field["is_entity"]
 
     model["has_self_reference"] = __refers_to(blueprint, cross_references) or __refers_to(blueprint, imports)
     # We should also check that the imports does not point to this as a cross ref.
@@ -68,6 +70,7 @@ def create_model(blueprint: Blueprint, package_name: str, package_path: str):
     model["has_cross_references"] = len(cross_references) > 0
     model["cross_references"] = __to__import_infos(cross_references.values())
     model["has_array"] = has_array
+    model["needs_numpy"] = needs_numpy
     model["fields"] = fields
     model["arguments"]=__create_named_arguments(fields)
     return model
@@ -84,6 +87,7 @@ def __create_field(attribute: BlueprintAttribute, package: Package,imports: Orde
     field["description"] = attribute.description
     field["readonly"] = False
     is_array = dimension is not None
+
     field["is_array"] = is_array
     a_type: str = attribute.get("attributeType")
     if a_type not in types:
@@ -103,9 +107,12 @@ def __create_field(attribute: BlueprintAttribute, package: Package,imports: Orde
     field["type"] = ftype
 
     if is_array:
-        field["type"] = "Sequence["+ftype+"]"
-        field["init"] = "list()"
-        field["setter"] = "[]"
+        dims=dimension.split(",")
+        ndims = len(dims)
+        # Multidimensional array
+        field["type"] = "ndarray"
+        field["init"] = f"ndarray({ndims})"
+        field["setter"] = f"ndarray({ndims})"
     else:
         field["setter"] = __map(ftype, setters)
         field["default"] = __find_default_value(attribute, ftype)
