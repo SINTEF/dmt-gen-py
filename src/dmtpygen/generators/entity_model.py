@@ -143,10 +143,10 @@ def __create_blueprint_field(field, blueprint: Blueprint, is_array, attribute: B
         field["type"] = blueprint.name
         field["setter"] = "value"
         field["init"] = "None"
-        optional = attribute.get("optional",True)
-        if attribute.contained and not optional and not blueprint.abstract:
-            # Then we create an inital
-            field["init"] = blueprint.name + "()"
+        # optional = attribute.get("optional",True)
+        # if attribute.contained and not optional and not blueprint.abstract:
+        #     # Then we create an inital
+        #     field["init"] = blueprint.name + "()"
     return field
 
 def __create_enum_field(field, package: Package, enum_type: str, imports) -> Dict:
