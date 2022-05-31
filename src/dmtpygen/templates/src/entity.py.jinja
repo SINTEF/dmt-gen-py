@@ -42,7 +42,7 @@ class {{ type }}({{super_classes}}):
     def __init__(self {{ arguments }}, **kwargs):
         super().__init__(**kwargs)
         {%- for field in fields %}
-        self.__{{ field.name }} = {{ field.init }}
+        self.{{ field.name }} = {{ field.init }}
         {%- endfor %}
         for key, value in kwargs.items():
             if not isinstance(value, Dict):

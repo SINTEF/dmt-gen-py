@@ -100,7 +100,7 @@ def __create_field(attribute: BlueprintAttribute, package: Package,imports: Orde
 
     enum_type = attribute.get("enumType",None)
     if enum_type:
-        return __create_enum_field(field,package,enum_type, imports)
+        return __create_enum_field(field,attribute,package,enum_type, imports)
 
     ftype = __map_type(a_type)
     field["is_entity"] = False
@@ -143,19 +143,16 @@ def __create_blueprint_field(field, blueprint: Blueprint, is_array, attribute: B
         field["type"] = blueprint.name
         field["setter"] = "value"
         field["init"] = "None"
-        # optional = attribute.get("optional",True)
-        # if attribute.contained and not optional and not blueprint.abstract:
-        #     # Then we create an inital
-        #     field["init"] = blueprint.name + "()"
     return field
 
-def __create_enum_field(field, package: Package, enum_type: str, imports) -> Dict:
+def __create_enum_field(field,attribute: BlueprintAttribute, package: Package, enum_type: str, imports) -> Dict:
     enum = package.get_enum(enum_type)
     imports[enum.name]=enum
     field["is_entity"] = False
     field["type"] = enum.name
     field["setter"] = "value"
-    field["init"] = enum.name + "." + enum.default
+    init=attribute.content.get("default",enum.default)
+    field["init"] = enum.name + "." +init
     return field
 
 def __map(key, values):
@@ -248,7 +245,7 @@ def __create_named_arguments(fields: Sequence[Dict]) -> str:
         if not field["is_entity"] and not field["is_array"]:
             default_value = field["init"]
             name = field["name"]
-            args.append(name + ":" + field["type"] +"="+ str(default_value))
+            args.append(name  + "="+ str(default_value))
             field["init"] = name
 
     if len(args) == 0:
