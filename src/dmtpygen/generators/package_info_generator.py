@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Dict, Sequence
 from jinja2.environment import Template
 
-from dmt import TemplateBasedGenerator
-from dmt.package_generator import PackageGenerator
-from dmt.common.package import Package
+from dmtgen import TemplateBasedGenerator
+from dmtgen.package_generator import PackageGenerator
+from dmtgen.common.package import Package
 
 
 class PackageInfoGenerator(TemplateBasedGenerator):

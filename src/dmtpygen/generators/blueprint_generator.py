@@ -4,12 +4,11 @@ from pathlib import Path
 from typing import Dict, Sequence
 from collections import OrderedDict
 from jinja2.environment import Template
-from dmt.common.package import Blueprint
-from dmt.package_generator import PackageGenerator
-from dmt import TemplateBasedGenerator
-from dmt.common.package import Package
+from dmtgen.common.package import Blueprint
+from dmtgen.package_generator import PackageGenerator
+from dmtgen import TemplateBasedGenerator
+from dmtgen.common.package import Package
 from .entity_model import find_default_value
-
 
 class BlueprintGenerator(TemplateBasedGenerator):
     """Generate metadata blueprint class"""
@@ -88,7 +87,9 @@ class BlueprintGenerator(TemplateBasedGenerator):
             else:
                 a_dict["contained"]=attribute.contained
                 a_dict["constructor"]="BlueprintAttribute"
-                a_dict["attributeType"]=root_name+a_dict["attributeType"]
+                atype = a_dict["attributeType"]
+                if not atype.startswith("system/SIMOS"):
+                    a_dict["attributeType"]=root_name+atype
 
             if len(named_args) > 0:
                 a_dict["named_args"] = ",".join(named_args)
@@ -123,6 +124,8 @@ class BlueprintGenerator(TemplateBasedGenerator):
             paths=import_package.get_paths()
             if import_package != package:
                 bp_path = ".".join(paths) + ".blueprints." + blueprint.name.lower()
+                if bp_path.startswith("system.SIMOS"):
+                    bp_path = "dmt.blueprints."+ blueprint.name.lower()
             else:
                 bp_path = "." + blueprint.name.lower()
 
@@ -133,6 +136,5 @@ class BlueprintGenerator(TemplateBasedGenerator):
     def __find_super_classes(self, bp: Blueprint) -> Sequence[Blueprint]:
         base_classes: OrderedDict[Blueprint] = OrderedDict()
         for extension in bp.extensions:
-            if extension.name != "NamedEntity":
                 base_classes[extension.name]=extension
         return base_classes.values()

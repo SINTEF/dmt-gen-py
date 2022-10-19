@@ -2,11 +2,11 @@
 from pathlib import Path
 from typing import Dict
 from jinja2.environment import Template
-from dmt.common.package import Blueprint
-from dmt.common.package import EnumDescription
-from dmt.package_generator import PackageGenerator
-from dmt import TemplateBasedGenerator
-from dmt.common.package import Package
+from dmtgen.common.package import Blueprint
+from dmtgen.common.package import EnumDescription
+from dmtgen.package_generator import PackageGenerator
+from dmtgen import TemplateBasedGenerator
+from dmtgen.common.package import Package
 
 class InitGenerator(TemplateBasedGenerator):
     """Generate module file for datamodels file"""

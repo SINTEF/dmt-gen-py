@@ -8,7 +8,7 @@ from os.path import basename, normpath
 from pathlib import Path
 from typing import Dict
 
-from dmt.common.package import Package
+from dmtgen.common.package import Package
 from .generators.runtime_generator import RuntimeGenerator
 
 

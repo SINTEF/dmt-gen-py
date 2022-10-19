@@ -3,10 +3,10 @@ import codecs
 from pathlib import Path
 from typing import Dict
 from jinja2.environment import Template
-from dmt.common.enum_description import EnumDescription
-from dmt.package_generator import PackageGenerator
-from dmt import TemplateBasedGenerator
-from dmt.common.package import Package
+from dmtgen.common.enum_description import EnumDescription
+from dmtgen.package_generator import PackageGenerator
+from dmtgen import TemplateBasedGenerator
+from dmtgen.common.package import Package
 
 
 class EnumGenerator(TemplateBasedGenerator):

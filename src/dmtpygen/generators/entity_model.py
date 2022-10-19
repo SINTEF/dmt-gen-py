@@ -2,13 +2,13 @@ import keyword
 from collections import OrderedDict
 from typing import Dict, Sequence, Set
 
-from dmt.common.blueprint_attribute import BlueprintAttribute
-from dmt.common.package import Blueprint, Package
+from dmtgen.common.blueprint_attribute import BlueprintAttribute
+from dmtgen.common.package import Blueprint, Package
 
 types = {"number": "float", "double": "float", "string": "str", "char": "str",
          "integer": "int", "short": "int", "boolean": "bool"}
 
-default_values = {"float": "0.0", "str": "\"\"", "int": "0", "bool": "False"}
+default_values = {"float": "0.0", "str": "None", "int": "0", "bool": "False"}
 
 setters = {"float": "float(value)", "str": "str(value)", "int": "int(value)", "bool": "bool(value)"}
 
@@ -225,8 +225,8 @@ def __to__import_infos(blueprints: Set[Blueprint]) -> Sequence[Dict]:
         paths=import_package.get_paths()
         name = blueprint.name
         bp_path = ".".join(paths) + "." + name.lower()
-        if bp_path == "system.SIMOS.namedentity":
-            bp_path = "dmt.named_entity"
+        if bp_path.startswith("system.SIMOS"):
+            bp_path = "dmt."+ name.lower()
         bp_name = __to_type_string(name)
         import_info = {
             "module": bp_path,
@@ -256,7 +256,6 @@ def __create_named_arguments(fields: Sequence[Dict]) -> str:
 def __find_super_classes(blueprint: Blueprint) -> Sequence[Blueprint]:
     base_classes: OrderedDict = OrderedDict()
     for extension in blueprint.extensions:
-        if extension.name != "NamedEntity":
             base_classes[extension.name]=extension
     return base_classes.values()
 

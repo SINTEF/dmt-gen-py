@@ -1,5 +1,5 @@
 from typing import Dict
-from dmt.template_generator import TemplateBasedGenerator
+from dmtgen.template_generator import TemplateBasedGenerator
 
 class SetupGenerator(TemplateBasedGenerator):
     """Generate setup file"""

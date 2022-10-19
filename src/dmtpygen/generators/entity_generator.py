@@ -4,9 +4,9 @@ import codecs
 from pathlib import Path
 from typing import Dict
 from jinja2.environment import Template
-from dmt.package_generator import PackageGenerator
-from dmt import TemplateBasedGenerator
-from dmt.common.package import Package
+from dmtgen.package_generator import PackageGenerator
+from dmtgen import TemplateBasedGenerator
+from dmtgen.common.package import Package
 from .entity_model import create_model
 
 class EntityObjectGenerator(TemplateBasedGenerator):
