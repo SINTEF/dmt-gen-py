@@ -36,9 +36,9 @@ class RuntimeGenerator(BaseGenerator):
         if self.source_only:
             src_dir = template_root / "src"
             dest_dir = output_dir
-            shutil.copytree(str(src_dir), str(dest_dir))
+            shutil.copytree(str(src_dir), str(dest_dir),dirs_exist_ok=True)
         else:
-            shutil.copytree(str(template_root), str(output_dir))
+            shutil.copytree(str(template_root), str(output_dir),dirs_exist_ok=True)
 
 
     def pre_generate(self,output_dir: Path):
@@ -47,7 +47,7 @@ class RuntimeGenerator(BaseGenerator):
             dest_dir = output_dir / self.package_name
             # rename the src folder to the package name
             if os.path.exists(dest_dir):
-                shutil.copytree(str(src_dir), str(dest_dir))
+                shutil.copytree(str(src_dir), str(dest_dir),dirs_exist_ok=True)
                 shutil.rmtree(src_dir, ignore_errors=True)
             else:
                 os.rename(src_dir, output_dir / self.package_name)
