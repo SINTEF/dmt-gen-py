@@ -194,14 +194,10 @@ def __convert_default(attribute: BlueprintAttribute, default_value):
         elif attribute.type == 'number':
             return float(default_value)
         elif attribute.type == 'boolean':
-            return bool(default_value)
+            return default_value.lower() == "true"
         else:
             return "'" + default_value + "'"
-    conversion = {
-        "false": "False",
-        "true": "True",
-    }
-    return conversion.get(default_value, default_value)
+    return default_value
 
 def __to_type_string(string: str) -> str:
     return string[:1].upper() + string[1:]
