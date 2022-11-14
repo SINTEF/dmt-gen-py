@@ -8,9 +8,9 @@ from dmtgen.common.package import Blueprint, Package
 types = {"number": "float", "double": "float", "string": "str", "char": "str",
          "integer": "int", "short": "int", "boolean": "bool"}
 
-default_values = {"float": "0.0", "str": "None", "int": "0", "bool": "False"}
+default_values = {"float": 0.0, "str": None, "int": 0, "bool": False}
 
-setters = {"float": "float(value)", "str": "str(value)", "int": "int(value)", "bool": "bool(value)"}
+setters = {"float": "float(value)", "str": "value", "int": "int(value)", "bool": "bool(value)"}
 
 def create_model(blueprint: Blueprint, package_name: str, package_path: str):
     model = {}
@@ -118,7 +118,6 @@ def __create_field(attribute: BlueprintAttribute, package: Package,imports: Orde
         field["default"] = __find_default_value(attribute, ftype)
         field["init"] = field["default"]
 
-
     return field
 
 def __rename_if_reserved(name):
@@ -170,18 +169,13 @@ def find_default_value(attribute: BlueprintAttribute):
     """Returns the default value literal"""
     a_type: str = attribute.get("attributeType")
     etype = __map_type(a_type)
-    default_value = attribute.get("default")
-    if default_value is not None:
-        return __convert_default(attribute,default_value)
-    default_value = __map(etype, default_values)
-    return default_value
+    return __find_default_value(attribute, etype)
 
 def __find_default_value(attribute: BlueprintAttribute, etype: str):
     default_value = attribute.get("default")
     if default_value is not None:
         return __convert_default(attribute,default_value)
-    default_value = __map(etype, default_values)
-    return default_value
+    return default_values[etype]
 
 
 def __convert_default(attribute: BlueprintAttribute, default_value):
@@ -240,9 +234,10 @@ def __create_named_arguments(fields: Sequence[Dict]) -> str:
     for field in fields:
         if not field["is_entity"] and not field["is_array"]:
             default_value = field["init"]
-            name = field["name"]
-            args.append(name  + "="+ str(default_value))
-            field["init"] = name
+            if default_value is not None:
+                name = field["name"]
+                args.append(name  + "="+ str(default_value))
+                field["init"] = name
 
     if len(args) == 0:
         return ""
