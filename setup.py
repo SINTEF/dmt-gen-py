@@ -17,7 +17,7 @@ with open('requirements.txt',encoding='utf8') as f:
 
 setup(
     name='dmtpygen',
-    version='0.3.0',
+    version='0.3.1',
     author="SINTEF Ocean",
     description="Python generator for SIMOS based DMT models",
     long_description=long_description,
