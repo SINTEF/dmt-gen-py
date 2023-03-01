@@ -1,5 +1,7 @@
 import keyword
 from collections import OrderedDict
+import os
+from pathlib import Path
 from typing import Dict, Sequence, Set
 
 from dmtgen.common.blueprint_attribute import BlueprintAttribute
@@ -66,9 +68,9 @@ def create_model(blueprint: Blueprint, package_name: str, package_path: str):
                         cross_references[import_type.name] = import_type
                         import_types.remove(import_type)
 
-    model["imports"] = __to__imports(import_types)
+    model["imports"] = __to__imports(pkg,import_types)
     model["has_cross_references"] = len(cross_references) > 0
-    model["cross_references"] = __to__import_infos(cross_references.values())
+    model["cross_references"] = __to__import_infos(pkg,cross_references.values())
     model["has_array"] = has_array
     model["needs_numpy"] = needs_numpy
     model["fields"] = fields
@@ -96,7 +98,7 @@ def __create_field(attribute: BlueprintAttribute, package: Package,imports: Orde
             imports[a_type]=blueprint
         else:
             cross_references[a_type]=blueprint
-        return __create_blueprint_field(field, blueprint, is_array, attribute)
+        return __create_blueprint_field(field, blueprint, is_array)
 
     enum_type = attribute.get("enumType",None)
     if enum_type:
@@ -127,7 +129,7 @@ def __rename_if_reserved(name):
 
 
 
-def __create_blueprint_field(field, blueprint: Blueprint, is_array, attribute: BlueprintAttribute) -> Dict:
+def __create_blueprint_field(field, blueprint: Blueprint, is_array) -> Dict:
     field["is_entity"] = True
     import_package: Package = blueprint.get_parent()
     paths=import_package.get_paths()
@@ -196,8 +198,8 @@ def __convert_default(attribute: BlueprintAttribute, default_value):
 def __to_type_string(string: str) -> str:
     return string[:1].upper() + string[1:]
 
-def __to__imports(blueprints: Set[Blueprint]) -> Sequence[str]:
-    imports = __to__import_infos(blueprints)
+def __to__imports(pkg: Package,  blueprints: Set[Blueprint]) -> Sequence[str]:
+    imports = __to__import_infos(pkg, blueprints)
     statements = [__to_import_statement(x) for x in imports]
     statements.sort()
     return statements
@@ -208,13 +210,11 @@ def __to_import_statement(import_info: Dict) -> str:
     return f"from {module} import {name}"
 
 
-def __to__import_infos(blueprints: Set[Blueprint]) -> Sequence[Dict]:
+def __to__import_infos(pkg: Package,blueprints: Set[Blueprint]) -> Sequence[Dict]:
     imports = []
     for blueprint in blueprints:
-        import_package: Package = blueprint.get_parent()
-        paths=import_package.get_paths()
+        bp_path=_to_relative_import_path(pkg,blueprint)
         name = blueprint.name
-        bp_path = ".".join(paths) + "." + name.lower()
         if bp_path.startswith("system.SIMOS"):
             bp_path = "dmt."+ name.lower()
         bp_name = __to_type_string(name)
@@ -225,6 +225,26 @@ def __to__import_infos(blueprints: Set[Blueprint]) -> Sequence[Dict]:
         imports.append(import_info)
 
     return imports
+
+def _to_relative_import_path(pkg: Package, blueprint: Blueprint) -> str:
+    import_package = blueprint.get_parent()
+    name = blueprint.name.lower()
+    if pkg == import_package:
+        return "."+name
+    current_dir = pkg.package_dir
+    import_dir = import_package.package_dir
+    import_module = import_package.package_dir / name
+    if import_module.is_relative_to(current_dir):
+        relative = import_module.relative_to(current_dir)
+        paths = relative.parts
+        return "."+".".join(paths)
+    elif current_dir.is_relative_to(import_dir):
+        relative_path = os.path.relpath(import_dir, current_dir)
+        path = relative_path.replace(os.sep, ".")
+        return path + name
+    else:
+        paths = import_package.get_paths()
+        return ".".join(paths)
 
 def __refers_to(blueprint: Blueprint, imports: Dict) -> bool:
     return blueprint in imports.values()
