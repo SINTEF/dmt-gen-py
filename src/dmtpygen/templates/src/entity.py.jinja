@@ -31,7 +31,7 @@ class {{ type }}({{super_classes}}):
     Keyword arguments
     -----------------
     {%-for field in fields %}
-    {{ field.name }} : {{ field.type }}
+    {{ field.name }} : {{ field.get("type_description",field.get("type")) }}
 {%-if field.description or "default" in field %}
          {{ field.description | escape_string }} {%- if "default" in field %}(default {{ field["default"] }}){%- endif %}
 {%-endif %}
@@ -69,7 +69,10 @@ class {{ type }}({{super_classes}}):
             raise ValueError("Expected sequense, but was " , type(value))
         self.__{{ field.name }} = value
             {%- else %}
-        self.__{{ field.name }} = asarray(value)
+        array = asarray(value, dtype={{ field.ftype }})
+        if len(array) > 0 and array.ndim != {{ field.ndim }}:
+            raise ValueError("Expected array with {{ field.ndim }} dimensions")
+        self.__{{ field.name }} = array
             {%- endif %}
         {%- else %}
         self.__{{ field.name }} = {{ field.setter }}

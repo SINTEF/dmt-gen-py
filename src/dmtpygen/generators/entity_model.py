@@ -107,14 +107,17 @@ def __create_field(attribute: BlueprintAttribute, package: Package,imports: Orde
     ftype = __map_type(a_type)
     field["is_entity"] = False
     field["type"] = ftype
+    field["type_description"] = ftype
 
     if is_array:
         dims=dimension.split(",")
-        ndims = len(dims)
-        # Multidimensional array
         field["type"] = "ndarray"
-        field["init"] = f"ndarray({ndims})"
-        field["setter"] = f"ndarray({ndims})"
+        field["type_description"] = "ndarray of " + ftype
+        field["ftype"] = ftype
+        field["init"] = "[]"
+        field["setter"] = f"asarray(value, dtype={ftype})"
+        field["ndim"] = len(dims)
+
     else:
         field["setter"] = __map(ftype, setters)
         field["default"] = __find_default_value(attribute, ftype)
