@@ -28,7 +28,7 @@ def __main():
 
     input_dir = args["<input_dir>"]
     if not input_dir:
-        raise Exception("input model root folder does not exist: ", input_dir)
+        raise ValueError("input model root folder does not exist: ", input_dir)
 
     source = args["--source"]
     root_dir = Path(os.path.dirname(sys.argv[0]))

@@ -88,8 +88,16 @@ class BlueprintGenerator(TemplateBasedGenerator):
                 a_dict["contained"]=attribute.contained
                 a_dict["constructor"]="BlueprintAttribute"
                 atype = a_dict["attributeType"]
+                idx = atype.find(":")
+                if idx > 0:
+                    alias = atype[:idx]
+                    adress = package.get_root().aliases[alias]
+                    atype = adress + "/" + atype[idx+1:]
+
                 if not atype.startswith("system/SIMOS"):
                     a_dict["attributeType"]=root_name+atype
+                else:
+                    a_dict["attributeType"]=atype
 
             if len(named_args) > 0:
                 a_dict["named_args"] = ",".join(named_args)
