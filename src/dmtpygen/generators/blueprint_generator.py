@@ -1,5 +1,6 @@
 """blueprint generator"""
 import codecs
+import os
 from pathlib import Path
 from typing import Dict, Sequence
 from collections import OrderedDict
@@ -129,11 +130,13 @@ class BlueprintGenerator(TemplateBasedGenerator):
         imports = []
         for blueprint in blueprints:
             import_package: Package = blueprint.get_parent()
-            paths=import_package.get_paths()
             if import_package != package:
-                bp_path = ".".join(paths) + ".blueprints." + blueprint.name.lower()
-                if bp_path.startswith("system.SIMOS"):
+                relative_path =self._to_relative_import_path(package, blueprint)
+                if relative_path.startswith("system.SIMOS"):
                     bp_path = "dmt.blueprints."+ blueprint.name.lower()
+                else:
+                    bp_path = "." + relative_path + ".blueprints." + blueprint.name.lower()
+
             else:
                 bp_path = "." + blueprint.name.lower()
 
@@ -144,5 +147,24 @@ class BlueprintGenerator(TemplateBasedGenerator):
     def __find_super_classes(self, bp: Blueprint) -> Sequence[Blueprint]:
         base_classes: OrderedDict[Blueprint] = OrderedDict()
         for extension in bp.extensions:
-                base_classes[extension.name]=extension
+            base_classes[extension.name]=extension
         return base_classes.values()
+
+    def _to_relative_import_path(self, pkg: Package, blueprint: Blueprint) -> str:
+        import_package = blueprint.get_parent()
+        name = blueprint.name.lower()
+        if pkg == import_package:
+            return "."+name
+        current_dir = pkg.package_dir
+        import_dir = import_package.package_dir
+        import_module = import_package.package_dir / name
+        # Get me the relative path from current_dir to import_dir
+        root_dir = pkg.get_root().package_dir
+        if import_module.is_relative_to(root_dir) and current_dir.is_relative_to(root_dir):
+            # Find the relative path from current_dir to import_dir
+            relative = os.path.relpath(import_dir, current_dir)
+            ret = "".join(Path(relative).parts)
+            return ret
+
+        paths = import_package.get_paths()
+        return ".".join(paths)

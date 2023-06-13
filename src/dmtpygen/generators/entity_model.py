@@ -237,17 +237,16 @@ def _to_relative_import_path(pkg: Package, blueprint: Blueprint) -> str:
     current_dir = pkg.package_dir
     import_dir = import_package.package_dir
     import_module = import_package.package_dir / name
-    if import_module.is_relative_to(current_dir):
-        relative = import_module.relative_to(current_dir)
-        paths = relative.parts
-        return "."+".".join(paths)
-    elif current_dir.is_relative_to(import_dir):
-        relative_path = os.path.relpath(import_dir, current_dir)
-        path = relative_path.replace(os.sep, ".")
-        return path + name
-    else:
-        paths = import_package.get_paths()
-        return ".".join(paths)
+    # Get me the relative path from current_dir to import_dir
+    root_dir = pkg.get_root().package_dir
+    if import_module.is_relative_to(root_dir) and current_dir.is_relative_to(root_dir):
+        # Find the relative path from current_dir to import_dir
+        relative = os.path.relpath(import_dir, current_dir)
+        ret = "".join(Path(relative).parts)
+        return ret
+
+    paths = import_package.get_paths()
+    return ".".join(paths)
 
 def __refers_to(blueprint: Blueprint, imports: Dict) -> bool:
     return blueprint in imports.values()
