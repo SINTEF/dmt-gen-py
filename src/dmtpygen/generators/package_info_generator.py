@@ -16,20 +16,13 @@ class PackageInfoGenerator(TemplateBasedGenerator):
     def generate(self, package_generator: PackageGenerator, template: Template, outputfile: Path, config: Dict):
         model  = {}
         package = package_generator.root_package
+        model["version"] = package.version
         model["packages"] = self.__create_package_infos(package)
         with codecs.open(outputfile, "w", "utf-8") as file:
             file.write(template.render(model))
 
     def __create_package_infos(self, pkg: Package) -> Sequence[Dict]:
-        pinfos = []
+        pinfos = {}
         for package in pkg.packages:
-            pinfos.append(self.__create_package_info(package))
-
+            pinfos[package.name]=int(package.version)
         return pinfos
-
-    def __create_package_info(self, pkg: Package) -> Dict:
-        pinfo = {"name":pkg.name, "version":int(pkg.version)}
-        pinfos = self.__create_package_infos(pkg)
-        if len(pinfos) > 0:
-            pinfo["packages"]=pinfos
-        return pinfo

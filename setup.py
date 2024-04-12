@@ -5,8 +5,7 @@ from setuptools import setup, find_packages
 
 here = Path(__file__).parent.resolve()
 
-# Remove build and dist folders
-shutil.rmtree(Path("build"), ignore_errors=True)
+# Remove dist folder
 shutil.rmtree(Path("dist"), ignore_errors=True)
 
 # Get the long description from the README file
@@ -17,7 +16,7 @@ with open('requirements.txt',encoding='utf8') as f:
 
 setup(
     name='dmtpygen',
-    version='0.3.4',
+    version='0.5.0.dev0',
     author="SINTEF Ocean",
     description="Python generator for SIMOS based DMT models",
     long_description=long_description,
