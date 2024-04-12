@@ -14,7 +14,7 @@ from .generators.runtime_generator import RuntimeGenerator
 
 def generate(input_dir: Path, output_dir: Path, config: Dict):
     """Generate python library based on DMT models"""
-    package = Package(input_dir)
+    package = Package(input_dir, parent=None, config=config)
     gen_root = Path(__file__).resolve().parent
     folder = basename(normpath(input_dir))
     package_name = folder

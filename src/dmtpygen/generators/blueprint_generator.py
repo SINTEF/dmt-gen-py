@@ -9,6 +9,7 @@ from dmtgen.common.package import Blueprint
 from dmtgen.package_generator import PackageGenerator
 from dmtgen import TemplateBasedGenerator
 from dmtgen.common.package import Package
+from .common import to_safe_string
 from .entity_model import find_default_value
 
 class BlueprintGenerator(TemplateBasedGenerator):
@@ -32,7 +33,7 @@ class BlueprintGenerator(TemplateBasedGenerator):
 
         for package in package.packages:
             sub_name = package.name
-            sub_dir = pkg_dir / sub_name 
+            sub_dir = pkg_dir / sub_name
             self.__generate_package(package,root_package, template, sub_dir)
 
 
@@ -47,11 +48,12 @@ class BlueprintGenerator(TemplateBasedGenerator):
 
         with codecs.open(outputfile, "w", "utf-8") as file:
             file.write(template.render(model))
+    
 
     def __create_blueprint_model(self, blueprint: Blueprint,root_name: str):
         model = {}
         name = blueprint.name
-        package = blueprint.get_parent()
+        package = blueprint.parent
         super_classes = self.__find_super_classes(blueprint)
         model["super_classes"] = self.__to__super_classes(super_classes)
         model["name"] = name
@@ -59,27 +61,28 @@ class BlueprintGenerator(TemplateBasedGenerator):
         model["root_package"] =root_name
         model["meta_package"] =root_name + ".blueprints"
         model["version"] = 1
-        model["description"] = blueprint.description
+        model["description"] = to_safe_string(blueprint.description)
         model["type"] = self.__to_type_string(blueprint)
 
         a_dicts = []
         for attribute in blueprint.all_attributes.values():
             a_dict = attribute.as_dict()
-            a_dict["is_primitive"] = attribute.is_primitive
+            a_dict["is_primitive"] = attribute.is_primitive()
             a_dict["optional"] = attribute.optional
-            a_dict["is_enum"] = attribute.is_enum
+            a_dict["is_enum"] = attribute.is_enum()
             named_args = []
 
-            if attribute.is_many:
+            if attribute.is_array():
                 sdims: str=a_dict["dimensions"]
                 dims=sdims.split(",")
                 for dim in dims:
                     named_args.append(f'Dimension("{dim.strip()}")')
-            if attribute.is_enum:
+            if attribute.is_enum():
                 a_dict["constructor"]="EnumAttribute"
-                a_dict["attributeType"]=root_name+a_dict["enumType"]
-            elif attribute.is_primitive:
-                if not attribute.optional and not attribute.is_many:
+                atype = a_dict["enumType"]
+                a_dict["attributeType"]=attribute.enum_type
+            elif attribute.is_primitive():
+                if not attribute.optional and not attribute.is_array():
                     named_args.append("optional=False")
                 a_dict["constructor"]="Attribute"
                 default = find_default_value(attribute)
@@ -88,17 +91,8 @@ class BlueprintGenerator(TemplateBasedGenerator):
             else:
                 a_dict["contained"]=attribute.contained
                 a_dict["constructor"]="BlueprintAttribute"
-                atype = a_dict["attributeType"]
-                idx = atype.find(":")
-                if idx > 0:
-                    alias = atype[:idx]
-                    adress = package.get_root().aliases[alias]
-                    atype = adress + "/" + atype[idx+1:]
-
-                if not atype.startswith("system/SIMOS"):
-                    a_dict["attributeType"]=root_name+atype
-                else:
-                    a_dict["attributeType"]=atype
+                atype = attribute.type
+                a_dict["attributeType"]=atype
 
             if len(named_args) > 0:
                 a_dict["named_args"] = ",".join(named_args)
@@ -129,7 +123,7 @@ class BlueprintGenerator(TemplateBasedGenerator):
     def __to__imports(self,package: Package, blueprints: Sequence[Blueprint]) -> Sequence[str]:
         imports = []
         for blueprint in blueprints:
-            import_package: Package = blueprint.get_parent()
+            import_package: Package = blueprint.parent
             if import_package != package:
                 relative_path =self._to_relative_import_path(package, blueprint)
                 if relative_path.startswith("system.SIMOS"):
@@ -151,7 +145,7 @@ class BlueprintGenerator(TemplateBasedGenerator):
         return base_classes.values()
 
     def _to_relative_import_path(self, pkg: Package, blueprint: Blueprint) -> str:
-        import_package = blueprint.get_parent()
+        import_package = blueprint.parent
         name = blueprint.name.lower()
         if pkg == import_package:
             return "."+name

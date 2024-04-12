@@ -20,9 +20,9 @@ class RuntimeGenerator(BaseGenerator):
     def __init__(self,root_dir,package_name,output_dir,root_package: Package) -> None:
         super().__init__(root_dir,package_name,output_dir,root_package)
 
-    def get_template_generators(self) -> Dict[str,TemplateBasedGenerator]:
-        """ Override in subclasses """
-        return {
+    def get_template_generator(self, template: Path, config: Dict) -> TemplateBasedGenerator:
+        """ Override in subclasses to control which template generator to use"""
+        generators ={
             "entity.py.jinja": EntityObjectGenerator(),
             "__init__.py.jinja": InitGenerator(),
             "blueprint.py.jinja": BlueprintGenerator(),
@@ -30,6 +30,11 @@ class RuntimeGenerator(BaseGenerator):
             "enum.py.jinja": EnumGenerator(),
             "package_info.py.jinja": PackageInfoGenerator()
         }
+        generator = generators.get(template.name)
+        if generator:
+            return generator
+        return super().get_template_generator(template, config)
+
 
     def copy_templates(self, template_root: Path, output_dir: Path):
         """Copy template folder to output folder"""

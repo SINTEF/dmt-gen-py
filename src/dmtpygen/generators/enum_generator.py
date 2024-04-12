@@ -7,6 +7,7 @@ from dmtgen.common.enum_description import EnumDescription
 from dmtgen.package_generator import PackageGenerator
 from dmtgen import TemplateBasedGenerator
 from dmtgen.common.package import Package
+from .common import to_safe_string
 
 
 class EnumGenerator(TemplateBasedGenerator):
@@ -46,7 +47,7 @@ class EnumGenerator(TemplateBasedGenerator):
         model = {}
         name = enum.name
         model["name"] = name
-        model["description"] = enum.description
+        model["description"] = to_safe_string(enum.description)
         model["type"] = self.__to_type_string(name)
         model["values"] = enum.enum_values
         return model

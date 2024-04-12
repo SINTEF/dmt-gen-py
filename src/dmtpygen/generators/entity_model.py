@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from typing import Dict, Sequence, Set
 
+from .common import to_safe_string
+
 from dmtgen.common.blueprint_attribute import BlueprintAttribute
 from dmtgen.common.package import Blueprint, Package
 
@@ -28,7 +30,7 @@ def create_model(blueprint: Blueprint, package_name: str, package_path: str):
     model["schema_package"] = package_name + ".schema" + package_path +".schemas"
     model["filename"] = name.lower()
     model["version"] = 1
-    model["description"] = blueprint.description
+    model["description"] = to_safe_string(blueprint.description)
     type_name = __first_to_upper(name)
     model["type"] = type_name
     model["blueprint_var_name"] = name.lower()
@@ -58,11 +60,11 @@ def create_model(blueprint: Blueprint, package_name: str, package_path: str):
     import_types= set(imports.values())
     import_types = import_types.union(super_classes)
 
-    pkg=blueprint.get_parent()
+    pkg=blueprint.parent
     for import_type in imports.values():
         if isinstance(import_type, Blueprint):
             for attribute  in import_type.all_attributes.values():
-                if not attribute.is_primitive and not attribute.is_enum:
+                if not attribute.is_primitive and not attribute.is_enum():
                     imp_bp = pkg.get_blueprint(attribute.type)
                     if blueprint == imp_bp:
                         cross_references[import_type.name] = import_type
@@ -86,23 +88,24 @@ def __create_field(attribute: BlueprintAttribute, package: Package,imports: Orde
     name = __rename_if_reserved(attribute.name)
     field["name"] = name
     dimension = attribute.get("dimensions",None)
-    field["description"] = attribute.description
+    field["description"] = to_safe_string(attribute.description)
     field["readonly"] = False
     is_array = dimension is not None
 
     field["is_array"] = is_array
-    a_type: str = attribute.get("attributeType")
+    a_type: str = attribute.type
     if a_type not in types:
-        blueprint = package.get_blueprint(a_type)
+        bp_parent = attribute.parent
+        bp_package = bp_parent.parent
+        blueprint = bp_package.get_blueprint(a_type)
         if attribute.contained:
             imports[a_type]=blueprint
         else:
             cross_references[a_type]=blueprint
         return __create_blueprint_field(field, blueprint, is_array)
 
-    enum_type = attribute.get("enumType",None)
-    if enum_type:
-        return __create_enum_field(field,attribute,package,enum_type, imports)
+    if attribute.is_enum():
+        return __create_enum_field(field,attribute,package,attribute.enum_type, imports)
 
     ftype = __map_type(a_type)
     field["is_entity"] = False
@@ -134,7 +137,7 @@ def __rename_if_reserved(name):
 
 def __create_blueprint_field(field, blueprint: Blueprint, is_array) -> Dict:
     field["is_entity"] = True
-    import_package: Package = blueprint.get_parent()
+    import_package: Package = blueprint.parent
     paths=import_package.get_paths()
     bp_path = ".".join(paths) + "." + blueprint.name.lower()
     field["module"] = bp_path
@@ -162,7 +165,7 @@ def __create_enum_field(field,attribute: BlueprintAttribute, package: Package, e
 def __map(key, values):
     converted = values.get(key)
     if not converted:
-        raise Exception('Unkown type ' + key)
+        raise ValueError('Unkown type ' + key)
     return converted
 
 
@@ -230,7 +233,7 @@ def __to__import_infos(pkg: Package,blueprints: Set[Blueprint]) -> Sequence[Dict
     return imports
 
 def _to_relative_import_path(pkg: Package, blueprint: Blueprint) -> str:
-    import_package = blueprint.get_parent()
+    import_package = blueprint.parent
     name = blueprint.name.lower()
     if pkg == import_package:
         return "."+name
