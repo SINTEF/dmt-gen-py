@@ -66,6 +66,9 @@ class BlueprintGenerator(TemplateBasedGenerator):
 
         a_dicts = []
         for attribute in blueprint.all_attributes.values():
+            # _id is the runtime-managed entity UUID, not a model field.
+            if attribute.name == "_id":
+                continue
             a_dict = attribute.as_dict()
             a_dict["is_primitive"] = attribute.is_primitive()
             a_dict["optional"] = attribute.optional

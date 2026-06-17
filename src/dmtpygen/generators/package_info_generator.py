@@ -1,6 +1,7 @@
 """Generate Python class with properties"""
 
 import codecs
+import json
 from pathlib import Path
 from typing import Dict, Sequence
 from jinja2.environment import Template
@@ -24,5 +25,18 @@ class PackageInfoGenerator(TemplateBasedGenerator):
     def __create_package_infos(self, pkg: Package) -> Sequence[Dict]:
         pinfos = {}
         for package in pkg.packages:
-            pinfos[package.name]=int(package.version)
+            pinfos[package.name]=self.__package_version(package)
         return pinfos
+
+    def __package_version(self, package: Package) -> int:
+        version = package.version
+        if version is not None:
+            return int(version)
+        # Fall back to the version file when the package version is unset.
+        versions_file = package.package_dir / "__versions__.json"
+        if versions_file.exists():
+            versions = json.loads(versions_file.read_text(encoding="utf-8"))
+            version = versions.get(package.name)
+            if version is not None:
+                return int(version)
+        return 0
