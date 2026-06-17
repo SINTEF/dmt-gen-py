@@ -1,7 +1,5 @@
 import keyword
 from collections import OrderedDict
-import os
-from pathlib import Path
 from typing import Dict, Sequence, Set
 
 from .common import to_safe_string
@@ -43,6 +41,9 @@ def create_model(blueprint: Blueprint, package_name: str, package_path: str):
 
 
     for attribute in blueprint.all_attributes.values():
+        # _id is the runtime-managed entity UUID, not a model field.
+        if attribute.name == "_id":
+            continue
         field = __create_field(attribute,blueprint.parent,imports,cross_references)
         if field:
             fields.append(field)
@@ -65,7 +66,7 @@ def create_model(blueprint: Blueprint, package_name: str, package_path: str):
         if isinstance(import_type, Blueprint):
             for attribute  in import_type.all_attributes.values():
                 if not attribute.is_primitive and not attribute.is_enum():
-                    imp_bp = pkg.get_blueprint(attribute.type)
+                    imp_bp = pkg.get_blueprint(__anchor_subpackage_path(pkg, attribute.type))
                     if blueprint == imp_bp:
                         cross_references[import_type.name] = import_type
                         import_types.remove(import_type)
@@ -97,7 +98,7 @@ def __create_field(attribute: BlueprintAttribute, package: Package,imports: Orde
     if a_type not in types:
         bp_parent = attribute.parent
         bp_package = bp_parent.parent
-        blueprint = bp_package.get_blueprint(a_type)
+        blueprint = bp_package.get_blueprint(__anchor_subpackage_path(bp_package, a_type))
         if attribute.contained:
             imports[a_type]=blueprint
         else:
@@ -127,6 +128,12 @@ def __create_field(attribute: BlueprintAttribute, package: Package,imports: Orde
         field["init"] = field["default"]
 
     return field
+
+def __anchor_subpackage_path(package: Package, a_type: str) -> str:
+    # Re-anchor a root-relative "/sub/Type" ref under the root package name.
+    if a_type.startswith("/"):
+        return "/" + package.get_root().name + a_type
+    return a_type
 
 def __rename_if_reserved(name):
     if keyword.iskeyword(name):
@@ -235,21 +242,28 @@ def __to__import_infos(pkg: Package,blueprints: Set[Blueprint]) -> Sequence[Dict
 def _to_relative_import_path(pkg: Package, blueprint: Blueprint) -> str:
     import_package = blueprint.parent
     name = blueprint.name.lower()
-    if pkg == import_package:
-        return "."+name
-    current_dir = pkg.package_dir
-    import_dir = import_package.package_dir
-    import_module = import_package.package_dir / name
-    # Get me the relative path from current_dir to import_dir
-    root_dir = pkg.get_root().package_dir
-    if import_module.is_relative_to(root_dir) and current_dir.is_relative_to(root_dir):
-        # Find the relative path from current_dir to import_dir
-        relative = os.path.relpath(import_dir, current_dir)
-        ret = "".join(Path(relative).parts)
-        return ret
 
-    paths = import_package.get_paths()
-    return ".".join(paths)
+    pkg_paths = pkg.get_paths()
+    import_paths = import_package.get_paths()
+    # Relative import only when both share a root package; else absolute.
+    if pkg_paths[0] == import_paths[0]:
+        common = 0
+        for own, other in zip(pkg_paths, import_paths):
+            if own != other:
+                break
+            common += 1
+        ups = len(pkg_paths) - common
+        descent = import_paths[common:]
+        dots = "." * (ups + 1)
+        if ups == 0:
+            return dots + ".".join(descent + [name])
+        if descent:
+            # Into a sibling subpackage: import the package, rely on __init__.
+            return dots + ".".join(descent)
+        # Ancestor ref: import the module directly to avoid a circular import.
+        return dots + name
+
+    return ".".join(import_paths)
 
 def __refers_to(blueprint: Blueprint, imports: Dict) -> bool:
     return blueprint in imports.values()
